@@ -1,6 +1,4 @@
-﻿using Ribbit.Constants;
-using Ribbit.Protocol;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -49,7 +47,7 @@ namespace BuildBackup
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                cdn.cacheDir = "H:/";
+                cdn.cacheDir = @"D:\Temp";
             }
             else
             {
@@ -119,12 +117,14 @@ namespace BuildBackup
                         h++;
                     }
 
+                    Console.Write("Finished, press any key...");
+                    Console.ReadKey();
                     Environment.Exit(0);
                 }
                 if (args[0] == "dumproot")
                 {
                     if (args.Length != 2) throw new Exception("Not enough arguments. Need mode, root");
-                    cdns = GetCDNs("wow");
+                    cdns = GetCDNs("wow_classic");
 
                     var fileNames = new Dictionary<ulong, string>();
 
@@ -159,12 +159,14 @@ namespace BuildBackup
 
                     }
 
+                    Console.Write("Finished, press any key...");
+                    Console.ReadKey();
                     Environment.Exit(0);
                 }
                 if (args[0] == "dumproot2")
                 {
                     if (args.Length != 2) throw new Exception("Not enough arguments. Need mode, root");
-                    cdns = GetCDNs("wow");
+                    cdns = GetCDNs("wow_classic");
 
                     var hasher = new Jenkins96();
 
@@ -194,6 +196,8 @@ namespace BuildBackup
                         print(selectedEntry);
                     }
 
+                    Console.Write("Finished, press any key...");
+                    Console.ReadKey();
                     Environment.Exit(0);
                 }
                 if (args[0] == "diffroot")
@@ -203,6 +207,8 @@ namespace BuildBackup
 
                     DiffRoot(from, to);
 
+                    Console.Write("Finished, press any key...");
+                    Console.ReadKey();
                     Environment.Exit(0);
                 }
                 if (args[0] == "calchash")
@@ -210,6 +216,9 @@ namespace BuildBackup
                     var hasher = new Jenkins96();
                     var hash = hasher.ComputeHash(args[1]);
                     Console.WriteLine(hash + " " + hash.ToString("x").PadLeft(16, '0'));
+
+                    Console.Write("Finished, press any key...");
+                    Console.ReadKey();
                     Environment.Exit(0);
                 }
                 if (args[0] == "calchashlistfile")
@@ -233,6 +242,9 @@ namespace BuildBackup
                         var hash = hasher.ComputeHash(line);
                         Console.WriteLine(line + " = " + hash.ToString("x").PadLeft(16, '0'));
                     }
+
+                    Console.Write("Finished, press any key...");
+                    Console.ReadKey();
                     Environment.Exit(0);
                 }
                 if (args[0] == "dumpinstall")
@@ -241,10 +253,21 @@ namespace BuildBackup
 
                     cdns = GetCDNs(args[1]);
                     install = GetInstall("http://" + cdns.entries[0].hosts[0] + "/" + cdns.entries[0].path + "/", args[2], true);
-                    foreach (var entry in install.entries)
+                    string filename = "install.txt";
+
+                    using (StreamWriter sw = File.AppendText(filename))
                     {
-                        Console.WriteLine(entry.name + " (size: " + entry.size + ", md5: " + BitConverter.ToString(entry.contentHash).Replace("-", string.Empty).ToLower() + ", tags: " + string.Join(",", entry.tags) + ")");
+                        foreach (var entry in install.entries)
+                        {
+                            Console.WriteLine(entry.name + " (size: " + entry.size + ", md5: " + BitConverter.ToString(entry.contentHash).Replace("-", string.Empty).ToLower() + ", tags: " + string.Join(",", entry.tags) + ")");
+                            sw.WriteLine($"{BitConverter.ToString(entry.contentHash).Replace("-", string.Empty).ToLower()},{entry.name}");
+                        }
+
+                        sw.Close();
                     }
+
+                    Console.Write("Finished, press any key...");
+                    Console.ReadKey();
                     Environment.Exit(0);
                 }
                 if (args[0] == "extractfilebycontenthash" || args[0] == "extractrawfilebycontenthash")
@@ -292,6 +315,8 @@ namespace BuildBackup
                         File.WriteAllBytes(args[5], RetrieveFileBytes(target, false, cdns.entries[0].path));
                     }
 
+                    Console.Write("Finished, press any key...");
+                    Console.ReadKey();
                     Environment.Exit(0);
                 }
                 if (args[0] == "extractfilesbylist")
@@ -310,6 +335,7 @@ namespace BuildBackup
                     cdnConfig = GetCDNconfig(Path.Combine(cdn.cacheDir, "tpr", "wow"), args[2]);
 
                     GetIndexes(Path.Combine(cdn.cacheDir, "tpr", "wow"), cdnConfig.archives);
+                    //GetIndexes(Path.Combine(cdn.cacheDir, "tpr", "wow_classic"), cdnConfig.archives);
 
                     foreach (var line in lines)
                     {
@@ -340,6 +366,7 @@ namespace BuildBackup
                         try
                         {
                             File.WriteAllBytes(Path.Combine(basedir, filename), RetrieveFileBytes(target));
+                            Console.WriteLine($"Extracted {basedir}{filename}\n");
                         }
                         catch (Exception e)
                         {
@@ -347,6 +374,8 @@ namespace BuildBackup
                         }
                     }
 
+                    Console.Write("Finished, press any key...");
+                    Console.ReadKey();
                     Environment.Exit(0);
                 }
                 if (args[0] == "extractfilesbyfnamelist")
@@ -401,6 +430,8 @@ namespace BuildBackup
 
                             if (rootList.ContainsKey(entry.Key))
                             {
+                                Console.WriteLine($"Key match found for {entry.Key}");
+
                                 var cleanContentHash = BitConverter.ToString(subentry.md5).Replace("-", string.Empty).ToLower();
 
                                 if (encodingList.ContainsKey(cleanContentHash))
@@ -487,7 +518,13 @@ namespace BuildBackup
                             var archiveName = Path.Combine(cdn.cacheDir, "tpr", "wow", "data", index[0] + "" + index[1], index[2] + "" + index[3], index);
                             if (!File.Exists(archiveName))
                             {
-                                throw new FileNotFoundException("Unable to find archive " + index + " on disk!");
+                                Console.WriteLine("Unable to find archive " + index + " on disk!");
+                                cdn.Get("http://blzddist1-a.akamaihd.net/tpr/wow/data/" + index[0] + index[1] + "/" + index[2] + index[3] + "/" + index);
+                            }
+
+                            if (!File.Exists(archiveName))
+                            {
+                                throw new FileNotFoundException("Unable to find archive " + index + " on disk! Donwload not succeeded.");
                             }
 
                             using (BinaryReader bin = new BinaryReader(File.Open(archiveName, FileMode.Open, FileAccess.Read)))
@@ -508,7 +545,8 @@ namespace BuildBackup
                             }
                         }
                     }
-
+                    Console.Write("Finished, press any key...");
+                    Console.ReadKey();
                     Environment.Exit(0);
                 }
                 if (args[0] == "forcebuild")
@@ -532,7 +570,7 @@ namespace BuildBackup
                 {
                     if (args.Length != 3) throw new Exception("Not enough arguments. Need mode, product, buildconfig");
 
-                    if (args[1] != "wow")
+                    if (args[1] != "wow_classic")
                     {
                         Console.WriteLine("Only WoW is currently supported due to root/fileDataID usage");
                         return;
@@ -586,18 +624,26 @@ namespace BuildBackup
                         }
                     }
 
+                    Console.Write("Finished, press any key...");
+                    Console.ReadKey();
                     Environment.Exit(0);
                 }
                 if (args[0] == "dumprawfile")
                 {
                     if (args.Length != 2) throw new Exception("Not enough arguments. Need mode, path");
                     Console.Write(Encoding.UTF8.GetString(BLTE.Parse(File.ReadAllBytes(args[1]))));
+
+                    Console.Write("Finished, press any key...");
+                    Console.ReadKey();
                     Environment.Exit(0);
                 }
                 if (args[0] == "dumprawfiletofile")
                 {
                     if (args.Length != 3) throw new Exception("Not enough arguments. Need mode, path, outfile");
                     File.WriteAllBytes(args[2], BLTE.Parse(File.ReadAllBytes(args[1])));
+
+                    Console.Write("Finished, press any key...");
+                    Console.ReadKey();
                     Environment.Exit(0);
                 }
                 if (args[0] == "dumpindex")
@@ -611,6 +657,9 @@ namespace BuildBackup
                     {
                         Console.WriteLine(entry.Key + " " + entry.Value.size);
                     }
+
+                    Console.Write("Finished, press any key...");
+                    Console.ReadKey();
                     Environment.Exit(0);
                 }
             }
@@ -618,10 +667,10 @@ namespace BuildBackup
             // Load programs
             if (checkPrograms == null)
             {
-                checkPrograms = new string[] { "agent", "wow", "wowt", "wowdev", "wow_beta", "wowe1", "wowe2", "wowe3", "wowv", "wowz", "catalogs", "wowdemo", "wow_classic"};
+                checkPrograms = new string[] { "wow_classic"};
             }
 
-            backupPrograms = new string[] { "agent", "wow", "wowt", "wow_beta", "wowdev", "wowe1", "wowe2", "wowe3", "wowv", "wowz", "wowdemo", "wow_classic" };
+            backupPrograms = new string[] { "wow_classic" };
 
             foreach (string program in checkPrograms)
             {
@@ -791,7 +840,7 @@ namespace BuildBackup
                     Console.Write("..done\n");
                 }
 
-                if (program == "wow" || program == "wowt" || program == "wow_beta") // Only these are supported right now
+                if (program == "wow_classic" || program == "wowt" || program == "wow_beta") // Only these are supported right now
                 {
                     Console.Write("Loading root..");
                     if (rootKey == "") { Console.WriteLine("Unable to find root key in encoding!"); } else { root = GetRoot("http://" + cdns.entries[0].hosts[0] + "/" + cdns.entries[0].path + "/", rootKey); }
@@ -890,7 +939,7 @@ namespace BuildBackup
             }
         }
 
-        private static byte[] RetrieveFileBytes(string target, bool raw = false, string cdndir = "tpr/wow")
+        private static byte[] RetrieveFileBytes(string target, bool raw = false, string cdndir = "tpr\\wow")
         {
             var unarchivedName = Path.Combine(cdn.cacheDir, cdndir, "data", target[0] + "" + target[1], target[2] + "" + target[3], target);
 
@@ -917,7 +966,13 @@ namespace BuildBackup
                 var archiveName = Path.Combine(cdn.cacheDir, cdndir, "data", index[0] + "" + index[1], index[2] + "" + index[3], index);
                 if (!File.Exists(archiveName))
                 {
-                    throw new FileNotFoundException("Unable to find archive " + index + " on disk!");
+                    Console.WriteLine("Unable to find archive " + index + " on disk!");
+                    cdn.Get("http://blzddist1-a.akamaihd.net/tpr/wow/data/" + index[0] + index[1] + "/" + index[2] + index[3] + "/" + index);
+                }
+
+                if (!File.Exists(archiveName))
+                {
+                    throw new FileNotFoundException("Unable to find archive " + index + " on disk! Donwload not succeeded.");
                 }
 
                 using (BinaryReader bin = new BinaryReader(File.Open(archiveName, FileMode.Open, FileAccess.Read)))
@@ -963,6 +1018,10 @@ namespace BuildBackup
             }
             else
             {
+                if (!File.Exists(Path.Combine(url, "config", "" + hash[0] + hash[1], "" + hash[2] + hash[3], hash)))
+                {
+                    cdn.Get("http://blzddist1-a.akamaihd.net/tpr/wow/config/" + hash[0] + hash[1] + "/" + hash[2] + hash[3] + "/" + hash);
+                }
                 content = File.ReadAllText(Path.Combine(url, "config", "" + hash[0] + hash[1], "" + hash[2] + hash[3], hash));
             }
 
@@ -1019,7 +1078,7 @@ namespace BuildBackup
 
         private static VersionsFile GetVersions(string program)
         {
-            string content;
+            string content = string.Empty;
             var versions = new VersionsFile();
 
             try
@@ -1036,17 +1095,6 @@ namespace BuildBackup
                     else
                     {
                         Console.WriteLine("Bad HTTP code while retrieving, trying Ribbit...");
-                        try
-                        {
-                            var client = new Client(Region.US);
-                            var request = client.Request("v1/products/" + program + "/versions");
-                            content = request.ToString();
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine("Error during retrieving Ribbit versions: " + e.Message);
-                            return versions;
-                        }
                     }
                 }
             }
@@ -1122,7 +1170,7 @@ namespace BuildBackup
 
         private static CdnsFile GetCDNs(string program)
         {
-            string content;
+            string content = string.Empty;
 
             var cdns = new CdnsFile();
 
@@ -1140,17 +1188,6 @@ namespace BuildBackup
                     else
                     {
                         Console.WriteLine("Bad HTTP code while retrieving, trying Ribbit...");
-                        try
-                        {
-                            var client = new Client(Region.US);
-                            var request = client.Request("v1/products/" + program + "/cdns");
-                            content = request.ToString();
-                        }
-                        catch(Exception e)
-                        {
-                            Console.WriteLine("Error during retrieving Ribbit cdns: " + e.Message);
-                            return cdns;
-                        }
                     }
                 }
             }
@@ -1332,6 +1369,10 @@ namespace BuildBackup
             }
             else
             {
+                if (!File.Exists(Path.Combine(url, "config", "" + hash[0] + hash[1], "" + hash[2] + hash[3], hash)))
+                {
+                    cdn.Get("http://blzddist1-a.akamaihd.net/tpr/wow/config/" + hash[0] + hash[1] + "/" + hash[2] + hash[3] + "/" + hash);
+                }
                 content = File.ReadAllText(Path.Combine(url, "config", "" + hash[0] + hash[1], "" + hash[2] + hash[3], hash));
             }
 
@@ -1582,6 +1623,11 @@ namespace BuildBackup
                 }
                 else
                 {
+                    if (!File.Exists(Path.Combine(url, "data", "" + archives[i][0] + archives[i][1], "" + archives[i][2] + archives[i][3], archives[i] + ".index")))
+                    {
+                        string p = url.Substring(url.LastIndexOf("\\")).Replace("\\", "");
+                        cdn.Get("http://blzddist1-a.akamaihd.net/tpr/" + p + "/data/" + archives[i][0] + archives[i][1] + "/" + archives[i][2] + archives[i][3] + "/" + archives[i] + ".index");
+                    }
                     indexContent = File.ReadAllBytes(Path.Combine(url, "data", "" + archives[i][0] + archives[i][1], "" + archives[i][2] + archives[i][3], archives[i] + ".index"));
                 }
 
@@ -1701,6 +1747,10 @@ namespace BuildBackup
             }
             else
             {
+                if (!File.Exists(Path.Combine(url, "data", "" + hash[0] + hash[1], "" + hash[2] + hash[3], hash)))
+                {
+                    cdn.Get("http://blzddist1-a.akamaihd.net/tpr/wow/data/" + hash[0] + hash[1] + "/" + hash[2] + hash[3] + "/" + hash);
+                }
                 content = File.ReadAllBytes(Path.Combine(url, "data", "" + hash[0] + hash[1], "" + hash[2] + hash[3], hash));
             }
 
@@ -1848,6 +1898,10 @@ namespace BuildBackup
             }
             else
             {
+                if (!File.Exists(Path.Combine(url, "data", "" + hash[0] + hash[1], "" + hash[2] + hash[3], hash)))
+                {
+                    cdn.Get("http://blzddist1-a.akamaihd.net/tpr/wow/data/" + hash[0] + hash[1] + "/" + hash[2] + hash[3] + "/" + hash);
+                }
                 content = File.ReadAllBytes(Path.Combine(url, "data", "" + hash[0] + hash[1], "" + hash[2] + hash[3], hash));
             }
 
@@ -2057,7 +2111,7 @@ namespace BuildBackup
 
         private static void DiffRoot(String fromCDNRoot, String toCDNRoot)
         {
-            cdns = GetCDNs("wow");
+            cdns = GetCDNs("wow_classic");
             var hasher = new Jenkins96();
 
             var rootFrom = GetRoot("http://" + cdns.entries[0].hosts[0] + "/" + cdns.entries[0].path + "/", fromCDNRoot, true);
