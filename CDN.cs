@@ -22,7 +22,7 @@ namespace BuildBackup
                 try
                 {
                     if (!Directory.Exists(cacheDir + cleanname)) { Directory.CreateDirectory(Path.GetDirectoryName(cacheDir + cleanname)); }
-                    Console.Write("\nDownloading " + cleanname);
+                    Console.Write($"Downloading {uri}\n");
                     using (HttpResponseMessage response = client.GetAsync(uri).Result)
                     {
                         if (response.IsSuccessStatusCode)
@@ -49,7 +49,7 @@ namespace BuildBackup
                         else if(response.StatusCode == System.Net.HttpStatusCode.NotFound && !url.StartsWith("http://client04"))
                         {
                             Console.WriteLine("Not found on primary mirror, retrying on secondary mirror...");
-                            return Get("http://client04.pdl.wow.battlenet.com.cn/" + cleanname, returnstream, redownload);
+                            return Get("http://client04.pdl.wow.battlenet.com.cn" + cleanname, returnstream, redownload);
                         }
                         else
                         {
